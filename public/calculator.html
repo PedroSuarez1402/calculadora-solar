@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculadora Solar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: "Inter", sans-serif; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Clases para tabs activos/inactivos */
+        .tab-active { background-color: #2563EB; color: white; border-color: #2563EB; }
+        .tab-inactive { background-color: #F1F5F9; color: #64748B; border-color: #E2E8F0; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <nav class="bg-white shadow-sm p-4 flex justify-between items-center">
+        <a href="/" class="font-bold text-xl flex items-center gap-2">
+            <i class="fa-solid fa-solar-panel text-blue-600"></i> SolarCalc
+        </a>
+        <div class="text-sm text-slate-500">Paso 2: Consumo</div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8 max-w-lg">
+        <div class="bg-white rounded-2xl shadow-xl p-8 fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 text-center">Analicemos tu consumo</h2>
+            
+            <div class="flex gap-2 mb-6">
+                <button onclick="setMode('dinero')" id="tab-dinero" class="flex-1 py-2 font-semibold rounded-lg border transition-all tab-active">
+                    <i class="fa-solid fa-dollar-sign mr-2"></i> Por Precio
+                </button>
+                <button onclick="setMode('kwh')" id="tab-kwh" class="flex-1 py-2 font-semibold rounded-lg border transition-all tab-inactive">
+                    <i class="fa-solid fa-bolt mr-2"></i> Por Watts
+                </button>
+            </div>
+
+            <form id="solarForm" class="space-y-6">
+                <div>
+                    <label id="label-principal" class="block text-sm font-medium text-slate-700 mb-2">Valor de tu Factura Mensual</label>
+                    <div class="relative">
+                        <i id="icon-principal" class="fa-solid fa-dollar-sign absolute left-4 top-3.5 text-slate-400"></i>
+                        <input type="number" id="valorInput" required placeholder="Ej: 200000" 
+                            class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <div id="costo-container" class="fade-in">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Costo por kWh (Opcional)</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-3.5 text-slate-400 text-sm">COP</span>
+                        <input type="number" id="costoUnitario" placeholder="Ej: 850" value="850"
+                            class="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-slate-50">
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Si no lo sabes, dejaremos el promedio nacional.</p>
+                </div>
+
+                <button type="submit" id="btnCalcular"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all hover:scale-[1.02] flex justify-center items-center gap-2">
+                    <span>Calcular Ahorro</span> <i class="fa-solid fa-calculator"></i>
+                </button>
+            </form>
+        </div>
+
+        <div id="resultsCard" class="hidden mt-8 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl shadow-2xl p-8 border border-slate-700 fade-in">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-green-500/20 p-3 rounded-full text-green-400"><i class="fa-solid fa-check text-xl"></i></div>
+                <div>
+                    <h3 class="text-xl font-bold">Análisis Completado</h3>
+                    <p class="text-xs text-slate-400">Basado en <span id="resConsumoReal"></span> kWh/mes</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-slate-700/50 p-4 rounded-xl">
+                    <div class="text-slate-400 text-xs uppercase font-bold">Sistema</div>
+                    <div class="text-2xl font-bold text-yellow-400" id="resSize">-- kW</div>
+                </div>
+                <div class="bg-slate-700/50 p-4 rounded-xl">
+                    <div class="text-slate-400 text-xs uppercase font-bold">Paneles</div>
+                    <div class="text-2xl font-bold text-blue-400" id="resPanels">--</div>
+                </div>
+            </div>
+            <div class="bg-slate-700/30 p-4 rounded-xl mb-6">
+                <p class="text-sm text-slate-300" id="resMessage">--</p>
+            </div>
+            <button onclick="window.location.href='/'" class="mt-6 w-full py-3 text-slate-400 hover:text-white transition-colors">Volver a empezar</button>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'dinero'; // 'dinero' o 'kwh'
+        const tabDinero = document.getElementById('tab-dinero');
+        const tabKwh = document.getElementById('tab-kwh');
+        const costoContainer = document.getElementById('costo-container');
+        const labelPrincipal = document.getElementById('label-principal');
+        const iconPrincipal = document.getElementById('icon-principal');
+        const inputPrincipal = document.getElementById('valorInput');
+
+        // Función para cambiar de pestaña
+        function setMode(mode) {
+            currentMode = mode;
+            if (mode === 'dinero') {
+                tabDinero.className = "flex-1 py-2 font-semibold rounded-lg border transition-all tab-active";
+                tabKwh.className = "flex-1 py-2 font-semibold rounded-lg border transition-all tab-inactive";
+                costoContainer.classList.remove('hidden');
+                labelPrincipal.innerText = "Valor de tu Factura Mensual";
+                inputPrincipal.placeholder = "Ej: 200000";
+                iconPrincipal.className = "fa-solid fa-dollar-sign absolute left-4 top-3.5 text-slate-400";
+            } else {
+                tabDinero.className = "flex-1 py-2 font-semibold rounded-lg border transition-all tab-inactive";
+                tabKwh.className = "flex-1 py-2 font-semibold rounded-lg border transition-all tab-active";
+                costoContainer.classList.add('hidden');
+                labelPrincipal.innerText = "Consumo Mensual (kWh)";
+                inputPrincipal.placeholder = "Ej: 350";
+                iconPrincipal.className = "fa-solid fa-bolt absolute left-4 top-3.5 text-slate-400";
+            }
+        }
+
+        // Lógica de Envío
+        const form = document.getElementById('solarForm');
+        const resultsCard = document.getElementById('resultsCard');
+        const btnCalcular = document.getElementById('btnCalcular');
+        const locationData = JSON.parse(localStorage.getItem('solarLocation') || '{}');
+
+        if (!locationData.lat) {
+            alert("Falta ubicación");
+            window.location.href = '/ubicacion';
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            btnCalcular.disabled = true;
+            btnCalcular.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Calculando...`;
+
+            const valor = document.getElementById('valorInput').value;
+            const costoUnitario = document.getElementById('costoUnitario').value;
+
+            try {
+                const response = await fetch('/api/calcular', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        lat: locationData.lat,
+                        lon: locationData.lon,
+                        tipo: currentMode,
+                        valor: parseFloat(valor),
+                        costoUnitario: currentMode === 'dinero' ? parseFloat(costoUnitario) : null
+                    })
+                });
+
+                if (!response.ok) throw new Error('Error API');
+                const data = await response.json();
+                
+                // Mostrar Resultados
+                resultsCard.classList.remove('hidden');
+                document.getElementById('resSize').innerText = data.recomendacion.tamañoSistema;
+                document.getElementById('resPanels').innerText = data.recomendacion.panelesSugeridos + " Unid.";
+                document.getElementById('resMessage').innerText = data.recomendacion.mensaje;
+                document.getElementById('resConsumoReal').innerText = data.inputs.consumoCalculadoKWh; // Dato extra útil
+                resultsCard.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error(error);
+                alert("Error calculando.");
+            } finally {
+                btnCalcular.disabled = false;
+                btnCalcular.innerHTML = `<span>Calcular Ahorro</span> <i class="fa-solid fa-calculator"></i>`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ubicación - Calculadora Solar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+      body { font-family: "Inter", sans-serif; }
+      .fade-in { animation: fadeIn 0.5s ease-in-out; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-800 h-screen flex flex-col">
+    
+    <nav class="bg-white shadow-sm p-4 flex justify-between items-center z-20">
+      <a href="/" class="font-bold text-xl flex items-center gap-2">
+        <i class="fa-solid fa-solar-panel text-blue-600"></i> SolarCalc
+      </a>
+      <div class="text-sm text-slate-500">Paso 1: Ubicación</div>
+    </nav>
+
+    <div class="flex-1 relative">
+      
+      <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] w-11/12 max-w-md">
+        <div class="bg-white p-2 rounded-lg shadow-lg flex gap-2">
+            <input type="text" id="searchInput" placeholder="Ej: Bogotá, Colombia" 
+                class="w-full px-4 py-2 border-none outline-none text-slate-700 bg-transparent"
+                onkeypress="handleEnter(event)">
+            <button onclick="buscarCiudad()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                <i class="fa-solid fa-search"></i>
+            </button>
+        </div>
+      </div>
+
+      <div id="map" class="w-full h-full z-10"></div>
+
+      <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] bg-white p-4 rounded-xl shadow-2xl w-11/12 max-w-md text-center fade-in">
+        <h3 class="font-bold text-lg mb-2">Punto de Instalación</h3>
+        <p id="statusText" class="text-sm text-slate-600 mb-4">Busca tu ciudad o haz clic en el mapa.</p>
+        <button id="btnNext" onclick="guardarYContinuar()" disabled 
+          class="w-full bg-slate-300 text-slate-500 font-bold py-3 rounded-lg transition-all cursor-not-allowed">
+          Confirmar Ubicación
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const map = L.map("map").setView([4.6097, -74.0817], 6);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(map);
+
+      let marker;
+      let selectedLocation = null;
+      const btnNext = document.getElementById("btnNext");
+      const statusText = document.getElementById("statusText");
+
+      // Función para manejar el Enter en el buscador
+      function handleEnter(e) {
+          if (e.key === 'Enter') buscarCiudad();
+      }
+
+      // LÓGICA DE BÚSQUEDA (Nominatim API)
+      async function buscarCiudad() {
+          const query = document.getElementById('searchInput').value;
+          if (!query) return;
+
+          try {
+              // API gratuita de OpenStreetMap
+              const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+              const data = await res.json();
+
+              if (data && data.length > 0) {
+                  const lugar = data[0];
+                  const lat = parseFloat(lugar.lat);
+                  const lon = parseFloat(lugar.lon);
+                  
+                  // Mover mapa y poner marcador
+                  map.setView([lat, lon], 12);
+                  actualizarMarcador(lat, lon);
+              } else {
+                  alert("Ciudad no encontrada. Intenta ser más específico (Ej: Medellin, Colombia)");
+              }
+          } catch (error) {
+              console.error(error);
+              alert("Error al buscar la ubicación.");
+          }
+      }
+
+      function actualizarMarcador(lat, lng) {
+          selectedLocation = { lat, lon: lng };
+          if (marker) marker.setLatLng([lat, lng]);
+          else marker = L.marker([lat, lng]).addTo(map);
+
+          statusText.innerText = `Ubicación: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          statusText.classList.add("text-green-600", "font-medium");
+          btnNext.disabled = false;
+          btnNext.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg hover:scale-105 transition-all";
+      }
+
+      map.on("click", (e) => actualizarMarcador(e.latlng.lat, e.latlng.lng));
+
+      function guardarYContinuar() {
+        if (selectedLocation) {
+          localStorage.setItem("solarLocation", JSON.stringify(selectedLocation));
+          window.location.href = "/calculadora";
+        }
+      }
+
+      // Geolocalización inicial
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+          map.setView([pos.coords.latitude, pos.coords.longitude], 12);
+        });
+      }
+    </script>
+  </body>
+</html>
