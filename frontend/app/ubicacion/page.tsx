@@ -1,11 +1,10 @@
-'use client'; // Vital para interactividad
+'use client'; 
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation'; // Ojo: usa next/navigation en App Router
+import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 
-// 1. Importación dinámica del Mapa (sin SSR)
 const MapBase = dynamic(() => import('../components/MapBase'), { 
   ssr: false,
   loading: () => (
@@ -19,17 +18,36 @@ export default function UbicacionPage() {
   const router = useRouter();
   
   // Estados
-  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lon: number} | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([4.6097, -74.0817]); // Centro inicial (Bogotá)
+  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lon: number, nombre?: string} | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([4.6097, -74.0817]); 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  // Lógica: Cuando el usuario hace clic en el mapa
-  const handleLocationSelect = (lat: number, lng: number) => {
-    setSelectedLocation({ lat, lon: lng });
+  // --- LÓGICA DE GEOCODIFICACIÓN INVERSA (Clic en mapa) ---
+  const obtenerNombreCiudad = async (lat: number, lon: number) => {
+     try {
+         // Usamos Nominatim para saber qué ciudad es
+         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+         const data = await res.json();
+         // Intentamos obtener ciudad, municipio o pueblo
+         const ciudad = data.address?.city || data.address?.town || data.address?.village || data.address?.county || "Ubicación seleccionada";
+         return ciudad;
+     } catch (_error) {
+         return "Ubicación personalizada " + _error;
+     }
   };
 
-  // Lógica: Buscar ciudad (Nominatim API)
+  // --- EVENTO: CLIC EN EL MAPA ---
+  const handleLocationSelect = async (lat: number, lng: number) => {
+    // 1. Guardamos coord temporalmente sin nombre mientras cargamos
+    setSelectedLocation({ lat, lon: lng, nombre: "Cargando nombre..." });
+    
+    // 2. Buscamos el nombre real
+    const nombreCiudad = await obtenerNombreCiudad(lat, lng);
+    setSelectedLocation({ lat, lon: lng, nombre: nombreCiudad });
+  };
+
+  // --- EVENTO: BUSCADOR ---
   const handleSearch = async () => {
     if (!searchQuery) return;
     setIsSearching(true);
@@ -41,41 +59,40 @@ export default function UbicacionPage() {
         if (data && data.length > 0) {
             const lat = parseFloat(data[0].lat);
             const lon = parseFloat(data[0].lon);
-            setMapCenter([lat, lon]); // Esto moverá el mapa gracias al componente FlyToLocation
+            // El display_name suele ser largo, tomamos solo la primera parte (la ciudad)
+            const nombreCompleto = data[0].display_name.split(',')[0]; 
+            
+            setMapCenter([lat, lon]); 
+            setSelectedLocation({ lat, lon, nombre: nombreCompleto }); // Guardamos el nombre encontrado
         } else {
-            alert("Ciudad no encontrada. Intenta ser más específico.");
+            alert("Ciudad no encontrada.");
         }
     } catch (error) {
         console.error(error);
-        alert("Error al buscar la ubicación.");
+        alert("Error al buscar.");
     } finally {
         setIsSearching(false);
     }
   };
 
-  // Lógica: Guardar y Continuar
   const handleContinue = () => {
     if (selectedLocation) {
         localStorage.setItem('solarLocation', JSON.stringify(selectedLocation));
-        router.push('/calculadora'); // Navegación tipo SPA
+        router.push('/calculadora');
     }
   };
 
   return (
     <main className="h-screen flex flex-col bg-slate-50">
-      
-      {/* 1. Navbar Superior */}
       <Navbar />
-
-      
       <div className="flex-1 relative">
         
-        {/* 3. Buscador Flotante */}
+        {/* Buscador */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-1000 w-11/12 max-w-md">
             <div className="bg-white p-2 rounded-xl shadow-xl flex gap-2 border border-slate-100">
                 <input 
                     type="text" 
-                    placeholder="Buscar ciudad (ej: Medellín, Colombia)" 
+                    placeholder="Buscar ciudad (ej: Bucaramanga)" 
                     className="w-full px-4 py-2 outline-none text-slate-700 placeholder:text-slate-400"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -91,13 +108,14 @@ export default function UbicacionPage() {
             </div>
         </div>
 
-        {/* 4. Mapa */}
         <MapBase onLocationSelect={handleLocationSelect} center={mapCenter} />
 
-        {/* 5. Tarjeta Inferior de Confirmación */}
+        {/* Tarjeta Inferior */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-1000 w-11/12 max-w-md">
              <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white/50 animate-fade-in text-center">
-                <h3 className="font-bold text-slate-800 text-lg mb-1">Punto de Instalación</h3>
+                <h3 className="font-bold text-slate-800 text-lg mb-1">
+                    {selectedLocation?.nombre || "Punto de Instalación"}
+                </h3>
                 
                 <p className={`text-sm mb-4 ${selectedLocation ? 'text-green-600 font-medium' : 'text-slate-500'}`}>
                     {selectedLocation 

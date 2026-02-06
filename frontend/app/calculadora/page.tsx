@@ -3,67 +3,75 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import CalculadoraForm from '../components/CalculadoraForm';
 
-// Definimos la estructura de la respuesta que viene del Backend
+// Actualizamos la interfaz para coincidir con el nuevo Backend
 interface SolarResponse {
-  recomendacion: {
-    tamañoSistema: string; // "X kW"
-    panelesSugeridos: number;
-    mensaje: string;
-  };
-  analisis: {
-    radiacionZona: string;
-    produccionPorKW: string;
-  };
   inputs: {
-    consumoCalculadoKWh: number;
+    consumoKWh: number;
+    tarifaAplicada: number;
   };
+  situacionActual: {
+    gastoMensual: number;
+    gastoAnual: number;
+  };
+  situacionSolar: {
+    ahorroMensual: number;
+    ahorroAnual: number;
+    ahorro25Anios: number;
+    co2Toneladas: string;
+  };
+  sistema: {
+    tamanoKW: number;
+    numeroPaneles: number;
+    generacionAnualEstimada: number;
+  };
+  mensaje: string;
 }
 
 export default function CalculadoraPage() {
   const router = useRouter();
-  
-  // --- ESTADOS ---
   const [mounted, setMounted] = useState(false);
-  const [mode, setMode] = useState<'dinero' | 'kwh'>('dinero'); // Modo por defecto
-  const [inputValue, setInputValue] = useState('');
-  const [costoUnitario, setCostoUnitario] = useState('650'); // Valor por defecto COP
+  const [ciudadNombre, setCiudadNombre] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SolarResponse | null>(null);
 
-  // --- EFECTOS ---
+  // Formateador de moneda (Pesos Colombianos)
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-CO', { 
+        style: 'currency', 
+        currency: 'COP', 
+        maximumFractionDigits: 0 
+    }).format(value);
+  };
+
   useEffect(() => {
     setMounted(true);
-    // Verificar si tenemos ubicación. Si no, devolver al mapa.
     const savedLoc = localStorage.getItem('solarLocation');
     if (!savedLoc) {
       router.push('/ubicacion');
+    } else {
+        const locData = JSON.parse(savedLoc);
+        if (locData.nombre) setCiudadNombre(locData.nombre);
     }
   }, [router]);
 
-  // Evitar renderizado en servidor que cause errores de hidratación con localStorage
   if (!mounted) return null;
 
-  // --- LÓGICA ---
-  const handleCalculate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onFormSubmit = async (formData: { mode: 'dinero' | 'kwh'; valor: number; costoUnitario: number }) => {
     setLoading(true);
     setResult(null);
 
     try {
-      // 1. Recuperar ubicación
       const locationData = JSON.parse(localStorage.getItem('solarLocation') || '{}');
-
-      // 2. Preparar payload para el backend
       const payload = {
         lat: locationData.lat,
         lon: locationData.lon,
-        tipo: mode, // 'dinero' o 'kwh'
-        valor: parseFloat(inputValue),
-        costoUnitario: mode === 'dinero' ? parseFloat(costoUnitario) : null
+        tipo: formData.mode,
+        valor: formData.valor,
+        costoUnitario: formData.costoUnitario 
       };
 
-      // 3. Petición al Backend (Puerto 3001)
       const res = await fetch('http://localhost:3001/api/calcular', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,13 +79,12 @@ export default function CalculadoraPage() {
       });
 
       if (!res.ok) throw new Error('Error en el cálculo');
-
       const data: SolarResponse = await res.json();
       setResult(data);
 
     } catch (error) {
       console.error(error);
-      alert("Ocurrió un error al conectar con el servidor. Asegúrate que el backend (puerto 3001) esté corriendo.");
+      alert("Error de conexión con el backend.");
     } finally {
       setLoading(false);
     }
@@ -86,136 +93,115 @@ export default function CalculadoraPage() {
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
-      <div className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
-        <div className="grid md:grid-cols-2 gap-8 items-start">
+      <div className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
           
-          {/* COLUMNA IZQUIERDA: FORMULARIO */}
-          <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-100">
-            <h2 className="text-2xl font-bold mb-6 text-slate-800">Analicemos tu consumo</h2>
-
-            {/* Tabs de Selección */}
-            <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-xl">
-              <button 
-                onClick={() => setMode('dinero')}
-                className={`flex-1 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2
-                  ${mode === 'dinero' ? 'bg-white text-red-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                <i className="fa-solid fa-sack-dollar"></i> Por Precio
-              </button>
-              <button 
-                onClick={() => setMode('kwh')}
-                className={`flex-1 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2
-                  ${mode === 'kwh' ? 'bg-white text-red-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                <i className="fa-solid fa-bolt"></i> Por Energía
-              </button>
-            </div>
-
-            <form onSubmit={handleCalculate} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  {mode === 'dinero' ? 'Valor mensual de tu factura (COP)' : 'Consumo mensual promedio (kWh)'}
-                </label>
-                <div className="relative">
-                  <i className={`fa-solid ${mode === 'dinero' ? 'fa-dollar-sign' : 'fa-bolt'} absolute left-4 top-4 text-slate-400`}></i>
-                  <input 
-                    type="number" 
-                    required
-                    placeholder={mode === 'dinero' ? "Ej: 200000" : "Ej: 350"}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-slate-900"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Campo extra solo para Dinero */}
-              {mode === 'dinero' && (
-                <div className="animate-fade-in">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Costo por kWh (Opcional)</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-3.5 text-slate-400 text-sm font-bold">COP</span>
-                    <input 
-                      type="number" 
-                      value={costoUnitario}
-                      onChange={(e) => setCostoUnitario(e.target.value)}
-                      className="w-full pl-14 pr-4 py-3 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-slate-900 transition-all"
-                    />
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">Usamos el promedio nacional si lo dejas igual.</p>
-                </div>
-              )}
-
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all hover:scale-[1.02] flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <i className="fa-solid fa-circle-notch fa-spin"></i> Calculando...
-                  </>
-                ) : (
-                  <>
-                    <span>Calcular Ahorro</span> <i className="fa-solid fa-calculator"></i>
-                  </>
-                )}
-              </button>
-            </form>
+          {/* COLUMNA IZQUIERDA: FORMULARIO (Ocupa 4 columnas) */}
+          <div className="lg:col-span-4">
+            <CalculadoraForm 
+              ciudadNombre={ciudadNombre} 
+              onSubmit={onFormSubmit} 
+              loading={loading} 
+            />
           </div>
 
-          {/* COLUMNA DERECHA: RESULTADOS (Se muestra solo si hay 'result') */}
-          <div className="relative min-h-[200px]">
+          {/* COLUMNA DERECHA: RESULTADOS (Ocupa 8 columnas) */}
+          <div className="lg:col-span-8 min-h-100">
             {!result && !loading && (
-               <div className="h-full flex flex-col items-center justify-center text-slate-300 border-2 border-dashed border-slate-200 rounded-2xl p-8">
-                  <i className="fa-solid fa-solar-panel text-6xl mb-4 opacity-20"></i>
-                  <p>Completa el formulario para ver tu análisis solar.</p>
+               <div className="h-full flex flex-col items-center justify-center text-slate-300 border-2 border-dashed border-slate-200 rounded-2xl p-12 bg-white/50">
+                  <i className="fa-solid fa-solar-panel text-7xl mb-6 opacity-20"></i>
+                  <p className="text-xl font-medium">Completa el formulario para ver tu proyección financiera.</p>
                </div>
             )}
 
             {result && (
-              <div className="animate-fade-in bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl shadow-2xl p-8 border border-slate-700 relative overflow-hidden">
-                {/* Efecto de brillo fondo */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500 rounded-full mix-blend-overlay filter blur-3xl opacity-20"></div>
-
-                <div className="flex items-center gap-3 mb-8 relative z-10">
-                    <div className="bg-green-500/20 p-3 rounded-full text-green-400">
-                        <i className="fa-solid fa-check text-xl"></i>
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold">Análisis Completado</h3>
-                        <p className="text-xs text-slate-400">Consumo est: {result.inputs.consumoCalculadoKWh} kWh/mes</p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
-                    <div className="bg-slate-700/50 p-4 rounded-xl backdrop-blur-sm">
-                        <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Sistema Requerido</div>
-                        <div className="text-3xl font-bold text-yellow-400">{result.recomendacion.tamañoSistema}</div>
-                    </div>
-                    <div className="bg-slate-700/50 p-4 rounded-xl backdrop-blur-sm">
-                        <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Paneles (550W)</div>
-                        <div className="text-3xl font-bold text-blue-400">{result.recomendacion.panelesSugeridos}</div>
-                    </div>
-                </div>
-
-                <div className="bg-slate-700/30 p-4 rounded-xl mb-6 relative z-10">
-                    <p className="text-sm text-slate-300 leading-relaxed">
-                       <i className="fa-solid fa-quote-left text-slate-500 mr-2"></i>
-                       {result.recomendacion.mensaje}
-                    </p>
-                </div>
+              <div className="animate-fade-in space-y-6">
                 
-                <div className="flex justify-between items-center text-xs text-slate-500 border-t border-slate-700 pt-4 relative z-10">
-                    <div className="flex items-center gap-2">
-                        <i className="fa-solid fa-sun text-yellow-600"></i>
-                        Radiación: <span className="text-slate-300">{result.analisis.radiacionZona}</span>
+                {/* 1. TARJETA PRINCIPAL: SITUACIÓN ACTUAL VS SOLAR */}
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+                    <div className="bg-slate-900 text-white p-4 flex justify-between items-center">
+                        <h3 className="font-bold text-lg"><i className="fa-solid fa-chart-line mr-2"></i> Análisis Financiero</h3>
+                        <span className="text-xs bg-slate-700 px-3 py-1 rounded-full text-slate-300">
+                             Tarifa: {formatCurrency(result.inputs.tarifaAplicada)}/kWh
+                        </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <i className="fa-solid fa-plug text-green-600"></i>
-                        Gen/kW: <span className="text-slate-300">{result.analisis.produccionPorKW}</span>
+                    
+                    <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                        {/* Situación Actual */}
+                        <div className="p-6 bg-slate-50">
+                            <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Situación Actual (Sin Solar)</h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-sm text-slate-500">Consumo Mensual</p>
+                                    <p className="text-xl font-bold text-slate-700">{result.inputs.consumoKWh} kWh</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500">Gasto Mensual Promedio</p>
+                                    <p className="text-xl font-bold text-slate-800">{formatCurrency(result.situacionActual.gastoMensual)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500">Gasto Anual Proyectado</p>
+                                    <p className="text-xl font-bold text-red-500">{formatCurrency(result.situacionActual.gastoAnual)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Situación Solar */}
+                        <div className="p-6 bg-green-50/50">
+                            <h4 className="text-sm font-bold text-green-600 uppercase tracking-wider mb-4">
+                                <i className="fa-solid fa-leaf mr-1"></i> Con Energía Solar
+                            </h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-sm text-slate-500">Ahorro Mensual Estimado</p>
+                                    <p className="text-2xl font-bold text-green-600">{formatCurrency(result.situacionSolar.ahorroMensual)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500">Ahorro Anual</p>
+                                    <p className="text-2xl font-bold text-green-700">{formatCurrency(result.situacionSolar.ahorroAnual)}</p>
+                                </div>
+                                <div className="pt-2 border-t border-green-100">
+                                    <p className="text-xs text-green-800 font-semibold mb-1">PROYECCIÓN A 25 AÑOS</p>
+                                    <p className="text-3xl font-black text-green-600">{formatCurrency(result.situacionSolar.ahorro25Anios)}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                {/* 2. DATOS TÉCNICOS Y AMBIENTALES */}
+                <div className="grid md:grid-cols-3 gap-6">
+                    {/* Sistema */}
+                    <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-100 col-span-2">
+                        <h4 className="font-bold text-slate-800 mb-4">Tu Sistema Ideal</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                             <div className="bg-slate-100 p-4 rounded-xl">
+                                <p className="text-xs text-slate-500">Potencia</p>
+                                <p className="text-2xl font-bold text-blue-600">{result.sistema.tamanoKW} kWp</p>
+                             </div>
+                             <div className="bg-slate-100 p-4 rounded-xl">
+                                <p className="text-xs text-slate-500">Paneles (550W)</p>
+                                <p className="text-2xl font-bold text-blue-600">{result.sistema.numeroPaneles} Unid.</p>
+                             </div>
+                        </div>
+                        <p className="text-sm text-slate-500 mt-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <i className="fa-solid fa-circle-info mr-2 text-blue-500"></i>
+                            {result.mensaje}
+                        </p>
+                    </div>
+
+                    {/* Impacto Ambiental */}
+                    <div className="bg-teal-700 text-white p-6 rounded-2xl shadow-md flex flex-col justify-center items-center text-center relative overflow-hidden">
+                        <i className="fa-solid fa-earth-americas text-8xl absolute -right-4 -bottom-4 opacity-20"></i>
+                        <h4 className="font-bold mb-2 z-10">Impacto Ambiental</h4>
+                        <p className="text-4xl font-bold text-teal-200 z-10">{result.situacionSolar.co2Toneladas}</p>
+                        <p className="text-sm text-teal-100 z-10">Toneladas de CO2 evitadas (año)</p>
+                        <div className="mt-4 bg-white/20 px-3 py-1 rounded-full text-xs z-10">
+                            Equivale a plantar {Math.round(parseFloat(result.situacionSolar.co2Toneladas) * 45)} árboles
+                        </div>
+                    </div>
+                </div>
+
               </div>
             )}
           </div>
