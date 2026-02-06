@@ -1,65 +1,48 @@
+import Link from "next/link"; // Importamos Link para navegación optimizada
 import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="bg-slate-900 text-white h-screen flex flex-col items-center justify-center overflow-hidden relative">
+      
+      {/* Fondo decorativo */}
+      <div 
+        className="absolute top-0 left-0 w-full h-full opacity-20 bg-cover bg-center"
+        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1509391366360-2e959784a276?q=80&w=2072&auto=format&fit=crop')" }}
+      >
+      </div>
+
+      {/* Contenido Principal */}
+      <div className="z-10 text-center px-4 max-w-2xl animate-fade-in">
+        <div className="mb-6 flex justify-center">
+          <Image 
+              src="/img/logo.png"  // Ruta: public/img/logo-empresa.png
+              alt="Logo Empresa"
+              width={200} // Ancho en px
+              height={80} // Alto en px
+              className="h-auto w-auto" // Para mantener proporción con Tailwind
+              priority // Prioridad alta para que cargue instantáneo
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        
+        <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-linear-to-r from-red-500 to-gray-400">
+          Calculadora Solar
+        </h1>
+        
+        <p className="text-slate-300 text-lg mb-8">
+          Descubre cuánto puedes ahorrar instalando paneles solares en tu hogar.
+          Cálculo preciso basado en radiación satelital (NREL).
+        </p>
+
+        {/* Botón usando Link de Next.js */}
+        <Link
+          href="/ubicacion" // Esta será la ruta que crearemos después
+          className="group relative inline-flex items-center justify-center px-8 py-3 text-lg font-medium text-white bg-red-600 rounded-full overflow-hidden transition-all hover:bg-red-700 hover:scale-105 shadow-lg shadow-red-500/30"
+        >
+          <span>Comenzar Ahora</span>
+          <i className="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+        </Link>
+      </div>
+    </main>
   );
 }
