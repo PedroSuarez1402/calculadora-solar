@@ -7,10 +7,12 @@ const solarController = {
                 return res.status(400).json({ error: "Faltan datos requeridos" });
             }
 
+            // --- CONFIGURACIÓN CONSERVADORA ---
+            const FACTOR_COBERTURA = 0.6; // Diseñamos para cubrir solo el 70% del consumo (Estándar residencial)
+            const POTENCIA_PANEL_KW = 0.55; // 550W
+
             // --- 1. NORMALIZACIÓN DE DATOS ---
-            // Definimos tarifa: Si el usuario la envió, la usamos. Si no, 650 COP por defecto.
             const tarifaFinal = costoUnitario || 650;
-            
             let consumoMensualkWh = 0;
 
             if (tipo === 'dinero') {
@@ -32,40 +34,52 @@ const solarController = {
             const dataNREL = data.outputs;
 
             // --- 3. CÁLCULOS TÉCNICOS ---
-            const generacionAnualPorKW = dataNREL.ac_annual; 
+            
+            // Rendimiento específico (kWh/año por cada kW instalado)
+            const rendimientoPorKW = dataNREL.ac_annual; 
+            
+            // Consumo anual
             const consumoAnualUsuario = consumoMensualkWh * 12;
 
-            // Tamaño del sistema para cubrir el 100% (o cercano)
-            let sistemaRecomendadoKW = consumoAnualUsuario / generacionAnualPorKW;
-            sistemaRecomendadoKW = Math.round(sistemaRecomendadoKW * 100) / 100;
+            // Potencia OBJETIVO (Aplicando el factor conservador del 70%)
+            const consumoObjetivo = consumoAnualUsuario * FACTOR_COBERTURA;
+            const potenciaTeoricaNecesaria = consumoObjetivo / rendimientoPorKW;
 
-            const numeroPaneles = Math.ceil(sistemaRecomendadoKW / 0.55); // Paneles 550W
+            // Número de Paneles (Redondeamos hacia arriba para no quedar cortos del objetivo)
+            let numeroPaneles = Math.ceil(potenciaTeoricaNecesaria / POTENCIA_PANEL_KW);
+            
+            // Mínimo 1 panel siempre
+            if (numeroPaneles < 1) numeroPaneles = 1;
 
-            // Energía real que va a generar el sistema recomendado (aprox)
-            const generacionRealAnual = sistemaRecomendadoKW * generacionAnualPorKW;
+            // Sistema Real
+            const sistemaRecomendadoKW = numeroPaneles * POTENCIA_PANEL_KW;
+
+            // Generación Real Estimada
+            const generacionRealAnual = sistemaRecomendadoKW * rendimientoPorKW;
             const generacionRealMensual = generacionRealAnual / 12;
 
-            // --- 4. CÁLCULOS FINANCIEROS (LO NUEVO) ---
+            // --- 4. CÁLCULOS FINANCIEROS ---
             
-            // A. Situación Actual (Sin Paneles)
+            // A. Situación Actual
             const gastoMensualActual = consumoMensualkWh * tarifaFinal;
             const gastoAnualActual = gastoMensualActual * 12;
 
-            // B. Situación Con Paneles
-            // Asumimos Net Metering: Si generas lo mismo que consumes, pagas 0 (teóricamente, sin contar cargo fijo)
-            // Si generas menos de lo que consumes, pagas la diferencia.
-            const deficitMensualkWh = Math.max(0, consumoMensualkWh - generacionRealMensual);
-            const nuevoGastoMensual = deficitMensualkWh * tarifaFinal;
-
-            // C. Ahorros
-            const ahorroMensual = gastoMensualActual - nuevoGastoMensual;
+            // B. Ahorro Real
+            // El ahorro es la energía generada (limitada al consumo real si hay excedentes no remunerados)
+            const energiaAhorradaMensual = Math.min(consumoMensualkWh, generacionRealMensual);
+            const ahorroMensual = energiaAhorradaMensual * tarifaFinal;
             const ahorroAnual = ahorroMensual * 12;
-            
-            // Proyección a 25 años (Sin inflación para simplificar, o podrías multiplicar por un factor)
-            const ahorro25Anios = ahorroAnual * 25; 
 
-            // D. Impacto Ambiental (Factor aprox: 0.0004 toneladas CO2 por kWh)
-            const co2Evitado = generacionRealAnual * 0.0004;
+            // C. Proyección a 25 años (Más conservadora)
+            // Factor degradación más agresivo (0.8 promedio global en 25 años)
+            const factorDegradacion = 0.85; 
+            const ahorro25Anios = (ahorroAnual * 25) * factorDegradacion;
+
+            // D. Impacto Ambiental
+            const co2Evitado = generacionRealAnual * 0.0005;
+
+            // Porcentaje real cubierto
+            const porcentajeCubierto = Math.round((generacionRealMensual / consumoMensualkWh) * 100);
 
             // --- 5. RESPUESTA ---
             res.json({
@@ -85,12 +99,11 @@ const solarController = {
                     co2Toneladas: co2Evitado.toFixed(2)
                 },
                 sistema: {
-                    tamanoKW: sistemaRecomendadoKW,
+                    tamanoKW: sistemaRecomendadoKW.toFixed(2),
                     numeroPaneles: numeroPaneles,
-                    potenciaPanel: "550W",
                     generacionAnualEstimada: Math.round(generacionRealAnual)
                 },
-                mensaje: `Con un sistema de ${sistemaRecomendadoKW} kWp podrías cubrir casi el 100% de tu factura.`
+                mensaje: `Diseñamos un sistema eficiente para cubrir el ${porcentajeCubierto}% de tu consumo con ${numeroPaneles} paneles.`
             });
 
         } catch (error) {
