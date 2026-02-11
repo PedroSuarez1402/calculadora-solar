@@ -16,8 +16,9 @@ const app = express();
 const PORT = process.env.PORT ?? 3001;
 
 const allowedOrigins = [
-    'http://localhost:3000',
-    'https://tu-proyecto-solar.vercel.app' // <--- Esto lo sabremos al final, pero déjalo preparado
+    'http://localhost:3000', // Para desarrollo local
+    'https://calculadora-solar-six.vercel.app', // Tu dominio de producción exacto
+    'https://calculadora-solar-q97n2eqw7-pedrosuarez1402s-projects.vercel.app' // (Opcional) La URL de despliegue específica
 ];
 
 // 2. Middlewares
