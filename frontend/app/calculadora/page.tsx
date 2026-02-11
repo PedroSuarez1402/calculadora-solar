@@ -72,7 +72,9 @@ export default function CalculadoraPage() {
         costoUnitario: formData.costoUnitario 
       };
 
-      const res = await fetch('http://localhost:3001/api/calcular', {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+
+      const res = await fetch(`${backendUrl}/api/calcular`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

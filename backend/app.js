@@ -15,8 +15,25 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT ?? 3001;
 
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://tu-proyecto-solar.vercel.app' // <--- Esto lo sabremos al final, pero déjalo preparado
+];
+
 // 2. Middlewares
-app.use(cors());
+app.use(cors({
+    origin: function (origin, callback) {
+        // Permitir peticiones sin origen (como Postman o Server-to-Server)
+        if (!origin) return callback(null, true);
+
+        // Si el origen está en la lista o es un subdominio de vercel (opcional), permitir
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('.vercel.app')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
