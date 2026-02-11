@@ -8,17 +8,17 @@ const __dirname = path.dirname(__filename);
 
 const router = Router();
 
-// Rutas de las vistas HTML
+// URL de tu frontend en producción (Vercel)
+const FRONTEND_URL = 'https://calculadora-solar-six.vercel.app';
+
+// 1. Ruta Principal: Muestra una "Landing de API" creativa
 router.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-router.get('/ubicacion', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/location.html'));
-});
-
-router.get('/calculadora', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/calculator.html'));
-});
+// 2. Redirección Inteligente:
+// Si alguien intenta entrar a las rutas viejas en el backend, lo mandamos al frontend nuevo
+router.get('/ubicacion', (req, res) => res.redirect(`${FRONTEND_URL}/ubicacion`));
+router.get('/calculadora', (req, res) => res.redirect(`${FRONTEND_URL}/calculadora`));
 
 export default router;
