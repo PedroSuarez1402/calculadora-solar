@@ -101,7 +101,7 @@ export default function UbicacionPage() {
                 <button 
                     onClick={handleSearch}
                     disabled={isSearching}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center min-w-12"
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center min-w-12"
                 >
                     {isSearching ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-search"></i>}
                 </button>
@@ -129,7 +129,7 @@ export default function UbicacionPage() {
                     disabled={!selectedLocation}
                     className={`w-full py-4 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2
                         ${selectedLocation 
-                            ? 'bg-red-600 text-white hover:bg-red-700 hover:scale-[1.02] shadow-red-500/30' 
+                            ? 'bg-green-600 text-white hover:bg-green-700 hover:scale-[1.02] shadow-green-500/30' 
                             : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                         }`}
                 >

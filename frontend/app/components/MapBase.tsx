@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useState, useEffect } from 'react';
 
-// Configuración de Iconos (igual que antes)
+// Configuración de Iconos
 const icon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -14,7 +14,7 @@ const icon = L.icon({
   iconAnchor: [12, 41],
 });
 
-// 1. Componente interno para detectar clics
+// Componente para manejar clics
 function LocationMarker({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number) => void }) {
   const [position, setPosition] = useState<L.LatLng | null>(null);
   
@@ -30,33 +30,42 @@ function LocationMarker({ onLocationSelect }: { onLocationSelect: (lat: number, 
   );
 }
 
-// 2. Componente interno para mover la cámara cuando buscas una ciudad
+// Componente para mover la cámara (ESTO ES LO QUE REALMENTE MUEVE EL MAPA)
 function FlyToLocation({ center }: { center: [number, number] }) {
     const map = useMap();
     useEffect(() => {
-        if (center) map.flyTo(center, 13); // Zoom 13 al encontrar ciudad
+        if (center) {
+            // Usamos flyTo o setView para mover el mapa sin desmontar el componente
+            map.flyTo(center, map.getZoom()); 
+        }
     }, [center, map]);
     return null;
 }
 
 interface MapBaseProps {
   onLocationSelect: (lat: number, lng: number) => void;
-  center?: [number, number]; // Nueva prop opcional
+  center?: [number, number];
 }
 
 export default function MapBase({ onLocationSelect, center = [4.6097, -74.0817] }: MapBaseProps) {
   return (
     <MapContainer 
+      // IMPORTANTE: No pasamos 'center' aquí dinámicamente. 
+      // Pasamos una coordenada fija o el valor inicial solo para la primera carga.
+      // Si pasas 'center' que cambia, React-Leaflet intenta reinicializar cosas que no debe.
       center={center} 
-      zoom={6} 
+      zoom={13} 
+      scrollWheelZoom={true}
       style={{ height: "100%", width: "100%", zIndex: 10 }}
     >
       <TileLayer
         attribution='&copy; OpenStreetMap'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      
       <LocationMarker onLocationSelect={onLocationSelect} />
-      {/* Activamos el movimiento de cámara */}
+      
+      {/* Este componente se encarga de reaccionar a los cambios de 'center' */}
       <FlyToLocation center={center} />
     </MapContainer>
   );

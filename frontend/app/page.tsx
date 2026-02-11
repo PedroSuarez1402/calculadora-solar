@@ -16,7 +16,7 @@ export default function Home() {
       <div className="z-10 text-center px-4 max-w-2xl animate-fade-in">
         <div className="mb-6 flex justify-center">
           <Image 
-              src="/img/logo.png"  // Ruta: public/img/logo-empresa.png
+              src="/img/logo_energia.png"  // Ruta: public/img/logo-empresa.png
               alt="Logo Empresa"
               width={200} // Ancho en px
               height={80} // Alto en px
@@ -25,7 +25,7 @@ export default function Home() {
           />
         </div>
         
-        <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-linear-to-r from-red-500 to-gray-400">
+        <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-linear-to-r from-green-500 to-gray-400">
           Calculadora Solar
         </h1>
         
@@ -37,7 +37,7 @@ export default function Home() {
         {/* Botón usando Link de Next.js */}
         <Link
           href="/ubicacion" // Esta será la ruta que crearemos después
-          className="group relative inline-flex items-center justify-center px-8 py-3 text-lg font-medium text-white bg-red-600 rounded-full overflow-hidden transition-all hover:bg-red-700 hover:scale-105 shadow-lg shadow-red-500/30"
+          className="group relative inline-flex items-center justify-center px-8 py-3 text-lg font-medium text-white bg-green-600 rounded-full overflow-hidden transition-all hover:bg-green-700 hover:scale-105 shadow-lg shadow-green-500/30"
         >
           <span>Comenzar Ahora</span>
           <i className="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>

@@ -30,7 +30,7 @@ export default function Navbar() {
       <Link href="/" className="font-bold text-xl flex items-center gap-3 text-slate-800 hover:text-red-600 transition-colors group">
         <div className="hidden sm:block relative transition-transform group-hover:scale-105">
           <Image 
-            src="/img/logo.png" 
+            src="/img/logo_energia.png" 
             alt="Logo" 
             width={100} 
             height={40} 

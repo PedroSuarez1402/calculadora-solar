@@ -13,7 +13,7 @@ function IndicatorContent({ currentStep, totalSteps, title }: StepProps) {
       <div className="flex items-center gap-2">
         {/* Si estamos en paso 2, mostramos un pequeño texto de 'Volver' o icono al hacer hover */}
         {currentStep > 1 && (
-            <span className="text-xs text-red-500 opacity-0 group-hover:opacity-100 transition-opacity mr-1">
+            <span className="text-xs text-green-500 opacity-0 group-hover:opacity-100 transition-opacity mr-1">
                 <i className="fa-solid fa-arrow-left"></i> Editar
             </span>
         )}
@@ -22,14 +22,14 @@ function IndicatorContent({ currentStep, totalSteps, title }: StepProps) {
         </div>
       </div>
       
-      <div className="text-slate-800 font-bold text-lg group-hover:text-red-600 transition-colors">
+      <div className="text-slate-800 font-bold text-lg group-hover:text-green-600 transition-colors">
         {title}
       </div>
       
       {/* Barra de progreso */}
       <div className="w-32 h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
         <div 
-            className="h-full bg-red-600 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(220,38,38,0.5)]"
+            className="h-full bg-green-600 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(220,38,38,0.5)]"
             style={{ width: `${(currentStep / totalSteps) * 100}%` }}
         ></div>
         </div>

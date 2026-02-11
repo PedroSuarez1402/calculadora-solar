@@ -28,7 +28,7 @@ export default function CalculatorForm({ ciudadNombre, onSubmit, loading }: Calc
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-800">Analicemos tu consumo</h2>
         {ciudadNombre && (
-          <div className="flex items-center gap-2 text-red-600 mt-1 font-medium bg-red-50 w-fit px-3 py-1 rounded-full text-sm">
+          <div className="flex items-center gap-2 text-green-600 mt-1 font-medium bg-red-50 w-fit px-3 py-1 rounded-full text-sm">
             <i className="fa-solid fa-location-dot"></i>
             <span>en {ciudadNombre}</span>
           </div>
@@ -40,14 +40,14 @@ export default function CalculatorForm({ ciudadNombre, onSubmit, loading }: Calc
         <button
           onClick={() => setMode('dinero')}
           className={`flex-1 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2
-            ${mode === 'dinero' ? 'bg-white text-red-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
+            ${mode === 'dinero' ? 'bg-white text-green-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
         >
           <i className="fa-solid fa-sack-dollar"></i> Por Dinero
         </button>
         <button
           onClick={() => setMode('kwh')}
           className={`flex-1 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2
-            ${mode === 'kwh' ? 'bg-white text-red-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
+            ${mode === 'kwh' ? 'bg-white text-green-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
         >
           <i className="fa-solid fa-bolt"></i> Por Energía
         </button>
@@ -67,7 +67,7 @@ export default function CalculatorForm({ ciudadNombre, onSubmit, loading }: Calc
                    type="number"
                    required
                    placeholder="Ej: 350"
-                   className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all text-slate-900"
+                   className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all text-slate-900"
                    value={inputValue}
                    onChange={(e) => setInputValue(e.target.value)}
                  />
@@ -82,7 +82,7 @@ export default function CalculatorForm({ ciudadNombre, onSubmit, loading }: Calc
                    required
                    value={tarifaKwh}
                    onChange={(e) => setTarifaKwh(e.target.value)}
-                   className="w-full pl-14 pr-4 py-3 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-slate-900 transition-all"
+                   className="w-full pl-14 pr-4 py-3 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-slate-900 transition-all"
                  />
                </div>
                <p className="text-xs text-slate-400 mt-1">Precio promedio editable.</p>
@@ -98,7 +98,7 @@ export default function CalculatorForm({ ciudadNombre, onSubmit, loading }: Calc
                  type="number"
                  required
                  placeholder="Ej: 200000"
-                 className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all text-slate-900"
+                 className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all text-slate-900"
                  value={inputValue}
                  onChange={(e) => setInputValue(e.target.value)}
                />
@@ -110,7 +110,7 @@ export default function CalculatorForm({ ciudadNombre, onSubmit, loading }: Calc
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all hover:scale-[1.02] flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all hover:scale-[1.02] flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {loading ? (
             <><i className="fa-solid fa-circle-notch fa-spin"></i> Calculando...</>
