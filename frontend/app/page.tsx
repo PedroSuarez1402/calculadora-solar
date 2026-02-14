@@ -20,7 +20,7 @@ export default function Home() {
               alt="Logo Empresa"
               width={200} // Ancho en px
               height={80} // Alto en px
-              className="h-auto w-auto" // Para mantener proporción con Tailwind
+              className="object-contain" // Para mantener proporción con Tailwind
               priority // Prioridad alta para que cargue instantáneo
           />
         </div>

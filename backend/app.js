@@ -8,6 +8,9 @@ import { fileURLToPath } from 'node:url';
 import webRoutes from './routes/web.js';
 import apiRoutes from './routes/api.js';
 
+// Importar conexión a BD para verificar
+import sequelize from './config/database.js';
+
 // 1. Reconstruir __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,8 +46,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/', webRoutes);
 app.use('/api', apiRoutes);
 
-// 4. Iniciar Servidor
-app.listen(PORT, () => {
-    console.log(`\n🚀 Servidor iniciado correctamente`);
-    console.log(`👉 Accede a la aplicación: http://localhost:${PORT}\n`);
-});
+// 4. Verificar conexión a BD y iniciar servidor
+try {
+    await sequelize.authenticate();
+    console.log('✅ Conexión a la base de datos establecida correctamente.');
+    
+    app.listen(PORT, () => {
+        console.log(`🚀 Servidor iniciado correctamente`);
+        console.log(`👉 Accede a la aplicación: http://localhost:${PORT}\n`);
+    });
+} catch (error) {
+    console.error('❌ Error al conectar a la base de datos:', error.message);
+    process.exit(1);
+}
